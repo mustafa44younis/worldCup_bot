@@ -6,6 +6,7 @@ import moment from "moment-timezone";
 import { connectDB } from "./database.js";
 import Subscriber from "./models/Subscriber.js";
 import { Markup } from "telegraf";
+import "dotenv/config";
 
 import {
   botToken,
