@@ -1,2 +1,20 @@
 node_modules/
 .env
+
+cache_round3_all.json
+cache_matches_live.json
+cache_matches_today.json
+.gitignore cache_matches_tomorrow.json
+ cache_matches_yesterday.json 
+ cache_r2_2026-06-21.json
+  cache_r2_2026-06-22.json
+   cache_r2_2026-06-23.json
+    cache_r2_2026-06-24.json 
+    cache_r2_2026-06-25.json 
+    cache_r2_2026-06-26.json
+     cache_r2_2026-06-27.json
+      cache_r3_2026-06-28.json
+       cache_r3_2026-06-29.json
+        cache_r3_2026-06-30.json
+         cache_round2_all.json 
+         cache_round3_all.json
