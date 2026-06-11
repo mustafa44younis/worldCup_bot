@@ -4,7 +4,7 @@ node_modules/
 cache_round3_all.json
 cache_matches_live.json
 cache_matches_today.json
-.gitignore cache_matches_tomorrow.json
+cache_matches_tomorrow.json
  cache_matches_yesterday.json 
  cache_r2_2026-06-21.json
   cache_r2_2026-06-22.json
