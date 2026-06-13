@@ -23,6 +23,19 @@ import {
   MATCHES_YESTERDAY_CACHE,
 } from "./config.js";
 
+
+import http from 'http';
+
+// 🌐 إنشاء سيرفر ويب مصغر لإبقاء البوت مستيقظاً على الاستضافات المجانية
+const PORT = process.env.PORT || 3000;
+
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+  res.end('🏆 بوت كأس العالم 2026 يعمل بنجاح ومستيقظ دائماً! ⚽');
+}).listen(PORT, () => {
+  console.log(`🌐 سيرفر الحفاظ على الاستيقاظ يعمل الآن على المنفذ: ${PORT}`);
+});
+
 import { translateTeam, getRoundLabel } from "./teams.js";
 import {
   sendPermanentMenu,
@@ -901,19 +914,6 @@ async function checkLiveMatches() {
 
 // تشغيل نظام الفحص الدوري للأهداف والمباريات الحية بناء على الفترة المحددة بالكونفيج
 setInterval(checkLiveMatches, checkInterval);
-
-
-import http from 'http';
-
-// 🌐 إنشاء سيرفر ويب مصغر لإبقاء البوت مستيقظاً على الاستضافات المجانية
-const PORT = process.env.PORT || 3000;
-
-http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-  res.end('🏆 بوت كأس العالم 2026 يعمل بنجاح ومستيقظ دائماً! ⚽');
-}).listen(PORT, () => {
-  console.log(`🌐 سيرفر الحفاظ على الاستيقاظ يعمل الآن على المنفذ: ${PORT}`);
-});
 
 // تشغيل البوت النهائي
 bot.launch().then(() => {
