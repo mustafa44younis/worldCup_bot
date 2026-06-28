@@ -8,6 +8,20 @@ import Subscriber from "./models/Subscriber.js";
 import { Markup } from "telegraf";
 import "dotenv/config";
 
+import http from "http";
+
+// 🌐 إنشاء سيرفر ويب مصغر لإبقاء البوت مستيقظاً على الاستضافات المجانية
+const PORT = process.env.PORT || 3000;
+
+http
+  .createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("🏆 بوت كأس العالم 2026 يعمل بنجاح ومستيقظ دائماً! ⚽");
+  })
+  .listen(PORT, () => {
+    console.log(`🌐 سيرفر الحفاظ على الاستيقاظ يعمل الآن على المنفذ: ${PORT}`);
+  });
+
 import {
   botToken,
   apiKey,
@@ -22,19 +36,6 @@ import {
   MATCHES_TOMORROW_CACHE,
   MATCHES_YESTERDAY_CACHE,
 } from "./config.js";
-
-
-import http from 'http';
-
-// 🌐 إنشاء سيرفر ويب مصغر لإبقاء البوت مستيقظاً على الاستضافات المجانية
-const PORT = process.env.PORT || 3000;
-
-http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-  res.end('🏆 بوت كأس العالم 2026 يعمل بنجاح ومستيقظ دائماً! ⚽');
-}).listen(PORT, () => {
-  console.log(`🌐 سيرفر الحفاظ على الاستيقاظ يعمل الآن على المنفذ: ${PORT}`);
-});
 
 import { translateTeam, getRoundLabel } from "./teams.js";
 import {
@@ -107,10 +108,14 @@ async function sendBroadcast(message) {
       { chatId: 1, _id: 0 },
     );
 
-    console.log(`📢 [Broadcast] جاري فحص الإرسال... القائمة تحتوي على: ${users.length} مستخدم دائم.`);
+    console.log(
+      `📢 [Broadcast] جاري فحص الإرسال... القائمة تحتوي على: ${users.length} مستخدم دائم.`,
+    );
 
     if (users.length === 0) {
-      console.log("⚠️ [Broadcast] لا يوجد مستخدمين مفعّلين للإشعارات في قاعدة البيانات حالياً.");
+      console.log(
+        "⚠️ [Broadcast] لا يوجد مستخدمين مفعّلين للإشعارات في قاعدة البيانات حالياً.",
+      );
       return;
     }
 
@@ -184,17 +189,20 @@ bot.command(["bc", "broadcast"], async (ctx) => {
   if (!messageToBroadcast || messageToBroadcast.trim() === "") {
     return ctx.reply(
       "⚠️ **طريقة الاستخدام:**\n" +
-      "1️⃣ اكتب رسالتك بجانب الأمر: `/bc اكتب رسالتك هنا`\n" +
-      "2️⃣ أو أرسل الرسالة في الشات ثم قم بعمل **Reply (رد)** عليها واكتب الأمر `/broadcast` فقط.", 
-      { parse_mode: "Markdown" }
+        "1️⃣ اكتب رسالتك بجانب الأمر: `/bc اكتب رسالتك هنا`\n" +
+        "2️⃣ أو أرسل الرسالة في الشات ثم قم بعمل **Reply (رد)** عليها واكتب الأمر `/broadcast` فقط.",
+      { parse_mode: "Markdown" },
     );
   }
 
   await ctx.reply(`⏳ جاري بدء الإرسال الجماعي الآن لجميع المشتركين...`);
-  
+
   const totalSent = await sendBroadcast(messageToBroadcast);
-  
-  await ctx.reply(`✅ **اكتمل البث الجماعي بنجاح!**\n\nتم تسليم الرسالة إلى \`[ ${totalSent} ]\` مشترك نشط بنجاح. 🚀`, { parse_mode: "Markdown" });
+
+  await ctx.reply(
+    `✅ **اكتمل البث الجماعي بنجاح!**\n\nتم تسليم الرسالة إلى \`[ ${totalSent} ]\` مشترك نشط بنجاح. 🚀`,
+    { parse_mode: "Markdown" },
+  );
 });
 
 bot.command("stats", async (ctx) => {
@@ -203,9 +211,15 @@ bot.command("stats", async (ctx) => {
   }
   try {
     const totalSubscribers = await Subscriber.countDocuments();
-    const activeSubscribers = await Subscriber.countDocuments({ notifications: true });
-    const inactiveSubscribers = await Subscriber.countDocuments({ notifications: false });
-    ctx.reply(`📊 **إحصائيات المشتركين:**\n\n• الإجمالي: ${totalSubscribers}\n• النشطون: ${activeSubscribers}\n• غير النشطون: ${inactiveSubscribers}`);
+    const activeSubscribers = await Subscriber.countDocuments({
+      notifications: true,
+    });
+    const inactiveSubscribers = await Subscriber.countDocuments({
+      notifications: false,
+    });
+    ctx.reply(
+      `📊 **إحصائيات المشتركين:**\n\n• الإجمالي: ${totalSubscribers}\n• النشطون: ${activeSubscribers}\n• غير النشطون: ${inactiveSubscribers}`,
+    );
   } catch (err) {
     console.error("❌ خطأ أثناء جلب إحصائيات المشتركين:", err.message);
     ctx.reply("❌ حدث خطأ أثناء جلب إحصائيات المشتركين.");
@@ -230,7 +244,9 @@ async function getRoundMatchesMessage(part) {
     }
 
     if (!matchesData) {
-      console.log("🌐 [API Request] جاري تحديث مباريات الجولة الأولى من السيرفر...");
+      console.log(
+        "🌐 [API Request] جاري تحديث مباريات الجولة الأولى من السيرفر...",
+      );
       const response = await axios.get(
         "https://api.football-data.org/v4/competitions/WC/matches",
         { headers: { "X-Auth-Token": apiKey }, timeout: 4000 },
@@ -291,7 +307,9 @@ async function getRoundMatchesMessage(part) {
   } catch (error) {
     console.error("❌ خطأ في جلب مباريات الجولة الأولى:", error.message);
     if (fs.existsSync(ROUND1_CACHE_FILE)) {
-      const fallbackData = JSON.parse(fs.readFileSync(ROUND1_CACHE_FILE, "utf8"));
+      const fallbackData = JSON.parse(
+        fs.readFileSync(ROUND1_CACHE_FILE, "utf8"),
+      );
       if (Array.isArray(fallbackData))
         return "📅 (بيانات مؤقتة) فشل الاتصال بالسيرفر، جاري عرض آخر تحديث مخزن...";
     }
@@ -338,6 +356,83 @@ bot.action(/round1_(.+)/, async (ctx) => {
     });
   } catch (error) {
     console.error("خطأ أكشن الجولة 1:", error.message);
+  }
+});
+
+// ===== الادوار الاقصائية =========
+
+bot.action('knockout_stage', async (ctx) => {
+  try {
+    // إظهار رسالة سريعة للمستخدم بأنه جاري التحميل
+    await ctx.answerCbQuery('جاري تحميل مواجهات الحسم... ⏳');
+
+    console.log("🌐 [API Request] جاري فحص مباريات الأدوار الإقصائية...");
+
+    const response = await axios.get(
+      "https://api.football-data.org/v4/matches",
+      {
+        headers: { "X-Auth-Token": apiKey },
+        params: { competitions: "WC" }, // جلب كل مباريات كأس العالم
+        timeout: 4000,
+      }
+    );
+
+    const matches = response.data.matches || [];
+
+    // قمنا بتحديد الكلمات المفتاحية للأدوار الإقصائية بناءً على توثيق الـ API
+    // تشمل: دور الـ 32، ثمن النهائي، ربع النهائي، نصف النهائي، والنهائي
+    const knockoutStages = [
+      'LAST_32', 'ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL', 'THIRD_PLACE'
+    ];
+
+    // فلترة المباريات لتشمل فقط الأدوار الإقصائية
+    const knockoutMatches = matches.filter(match => knockoutStages.includes(match.stage));
+
+    if (knockoutMatches.length === 0) {
+      return await ctx.reply('📊 لم تتحدد مواجهات الأدوار الإقصائية بعد. تابعنا لمعرفتها فور صدورها! 🎯');
+    }
+
+    // ترتيب وتنسيق الرسالة للمستخدم
+    let message = `🏆 **مواجهات الأدوار الإقصائية الحامسية - كأس العالم 2026** ⚽\n\n`;
+
+    // قمنا بتقسيم المباريات حسب الدور لتظهر بشكل منسق جداً
+    const stagesTranslation = {
+      'LAST_32': '🔹 دور الـ 32',
+      'ROUND_OF_16': '🔥 دور ثمن النهائي (16)',
+      'QUARTER_FINALS': '🚀 دور ربع النهائي (8)',
+      'SEMI_FINALS': '⚡ دور نصف النهائي (4)',
+      'FINAL': '👑 النهائي الكبير',
+      'THIRD_PLACE': '🥉 مباراة تحديد المركز الثالث'
+    };
+
+    // تجميع المباريات حسب كل دور
+    let currentStage = '';
+    
+    knockoutMatches.forEach(match => {
+      if (currentStage !== match.stage) {
+        currentStage = match.stage;
+        message += `\n━━━━━━━ ${stagesTranslation[currentStage] || currentStage} ━━━━━━━\n`;
+      }
+
+      const homeInfo = translateTeam(match.homeTeam.name || 'لم يحدد بعد');
+      const awayInfo = translateTeam(match.awayTeam.name || 'لم يحدد بعد');
+      
+      const homeScore = match.score.fullTime.home !== null ? match.score.fullTime.home : '-';
+      const awayScore = match.score.fullTime.away !== null ? match.score.fullTime.away : '-';
+
+      // عرض حالة المباراة إذا كانت منتهية أو ملعوبة أو قادمة
+      let statusIcon = '🗓️';
+      if (match.status === 'LIVE' || match.status === 'IN_PLAY') statusIcon = '🔴 مباشر';
+      if (match.status === 'FINISHED') statusIcon = '✅';
+
+      message += `${statusIcon} *${homeInfo.name}*  ${homeScore} 🆚 ${awayScore}  *${awayInfo.name}*\n`;
+    });
+
+    await ctx.replyWithMarkdown(message);
+
+  } catch (err) {
+    console.error("❌ خطأ في جلب الأدوار الإقصائية:", err.message);
+    await ctx.reply("⚠️ عذراً، حدث خطأ أثناء جلب البيانات الإقصائية. يرجى المحاولة لاحقاً.");
   }
 });
 
@@ -524,39 +619,61 @@ async function fetchAndSendMatches(ctx, targetDateStr, titleLabel, cacheFile) {
       if (now - cacheStats.mtimeMs < CACHE_DURATION) {
         const cachedData = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
         if (Array.isArray(cachedData)) {
-          console.log(`ℹ️ [Cache Hit] تم جلب ${titleLabel} من الكاش المحلي بنجاح.`);
-          return processAndSendMatchesList(ctx, cachedData, targetDateStr, titleLabel);
+          console.log(
+            `ℹ️ [Cache Hit] تم جلب ${titleLabel} من الكاش المحلي بنجاح.`,
+          );
+          return processAndSendMatchesList(
+            ctx,
+            cachedData,
+            targetDateStr,
+            titleLabel,
+          );
         }
       }
     }
 
-    console.log(`🌐 [API Request] جاري جلب ${titleLabel} من السيرفر الخارجي...`);
+    console.log(
+      `🌐 [API Request] جاري جلب ${titleLabel} من السيرفر الخارجي...`,
+    );
     const response = await axios.get(
       "https://api.football-data.org/v4/competitions/WC/matches",
       { headers: { "X-Auth-Token": apiKey }, timeout: 4000 },
     );
 
-    const matchesData = response.data && response.data.matches ? response.data.matches : [];
+    const matchesData =
+      response.data && response.data.matches ? response.data.matches : [];
 
     if (!Array.isArray(matchesData)) {
       throw new Error("بنية البيانات ليست مصفوفة صالحة.");
     }
 
     fs.writeFileSync(cacheFile, JSON.stringify(matchesData), "utf8");
-    return processAndSendMatchesList(ctx, matchesData, targetDateStr, titleLabel);
+    return processAndSendMatchesList(
+      ctx,
+      matchesData,
+      targetDateStr,
+      titleLabel,
+    );
   } catch (error) {
     console.error(`❌ خطأ في كاش ${titleLabel}:`, error.message);
     if (fs.existsSync(cacheFile)) {
       try {
         const fallbackData = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
         if (Array.isArray(fallbackData)) {
-          return processAndSendMatchesList(ctx, fallbackData, targetDateStr, `${titleLabel} (مؤقت)`);
+          return processAndSendMatchesList(
+            ctx,
+            fallbackData,
+            targetDateStr,
+            `${titleLabel} (مؤقت)`,
+          );
         }
       } catch (e) {
         console.error(e.message);
       }
     }
-    ctx.reply(`📅 **جدول ${titleLabel}:**\n\nلا توجد مباريات مجدولة حالياً أو السيرفر قيد التحديث. ☕`);
+    ctx.reply(
+      `📅 **جدول ${titleLabel}:**\n\nلا توجد مباريات مجدولة حالياً أو السيرفر قيد التحديث. ☕`,
+    );
   }
 }
 
@@ -566,12 +683,15 @@ function processAndSendMatchesList(ctx, matches, targetDateStr, titleLabel) {
     return (
       match &&
       match.utcDate &&
-      moment.utc(match.utcDate).tz("Asia/Riyadh").format("YYYY-MM-DD") === targetDateStr
+      moment.utc(match.utcDate).tz("Asia/Riyadh").format("YYYY-MM-DD") ===
+        targetDateStr
     );
   });
 
   if (filteredMatches.length === 0) {
-    return ctx.reply(`📅 **جدول ${titleLabel}:**\n\nلا توجد مباريات في هذا اليوم. ☕`);
+    return ctx.reply(
+      `📅 **جدول ${titleLabel}:**\n\nلا توجد مباريات في هذا اليوم. ☕`,
+    );
   }
 
   let message = `📅 **جدول ${titleLabel}:**\n📍 _بتوقيت مكة المكرمة_\n\n`;
@@ -581,7 +701,10 @@ function processAndSendMatchesList(ctx, matches, targetDateStr, titleLabel) {
 
     const homeInfo = translateTeam(match.homeTeam.name);
     const awayInfo = translateTeam(match.awayTeam.name);
-    const matchTime = moment.utc(match.utcDate).tz("Asia/Riyadh").format("hh:mm A");
+    const matchTime = moment
+      .utc(match.utcDate)
+      .tz("Asia/Riyadh")
+      .format("hh:mm A");
     const roundText = getRoundLabel(match.matchday);
 
     if (match.status === "FINISHED") {
@@ -601,8 +724,16 @@ function processAndSendMatchesList(ctx, matches, targetDateStr, titleLabel) {
 }
 
 bot.hears("◀️ مباريات الأمس", async (ctx) => {
-  const yesterday = moment().tz("Asia/Riyadh").subtract(1, "days").format("YYYY-MM-DD");
-  await fetchAndSendMatches(ctx, yesterday, "مباريات الأمس", MATCHES_YESTERDAY_CACHE);
+  const yesterday = moment()
+    .tz("Asia/Riyadh")
+    .subtract(1, "days")
+    .format("YYYY-MM-DD");
+  await fetchAndSendMatches(
+    ctx,
+    yesterday,
+    "مباريات الأمس",
+    MATCHES_YESTERDAY_CACHE,
+  );
 });
 
 bot.hears("⏺️ مباريات اليوم", async (ctx) => {
@@ -611,8 +742,16 @@ bot.hears("⏺️ مباريات اليوم", async (ctx) => {
 });
 
 bot.hears("▶️ مباريات الغد", async (ctx) => {
-  const tomorrow = moment().tz("Asia/Riyadh").add(1, "days").format("YYYY-MM-DD");
-  await fetchAndSendMatches(ctx, tomorrow, "مباريات الغد", MATCHES_TOMORROW_CACHE);
+  const tomorrow = moment()
+    .tz("Asia/Riyadh")
+    .add(1, "days")
+    .format("YYYY-MM-DD");
+  await fetchAndSendMatches(
+    ctx,
+    tomorrow,
+    "مباريات الغد",
+    MATCHES_TOMORROW_CACHE,
+  );
 });
 
 // ==========================================
@@ -639,11 +778,20 @@ async function getGroupStandingsMessage(range) {
         { headers: { "X-Auth-Token": apiKey }, timeout: 4000 },
       );
       standingsData = response.data.standings;
-      fs.writeFileSync(STANDINGS_CACHE_FILE, JSON.stringify(standingsData), "utf8");
+      fs.writeFileSync(
+        STANDINGS_CACHE_FILE,
+        JSON.stringify(standingsData),
+        "utf8",
+      );
     } catch (err) {
-      console.error("⚠️ فشل تحديث الترتيب، سيتم محاولة عرض الكاش المتاح:", err.message);
+      console.error(
+        "⚠️ فشل تحديث الترتيب، سيتم محاولة عرض الكاش المتاح:",
+        err.message,
+      );
       if (fs.existsSync(STANDINGS_CACHE_FILE)) {
-        standingsData = JSON.parse(fs.readFileSync(STANDINGS_CACHE_FILE, "utf8"));
+        standingsData = JSON.parse(
+          fs.readFileSync(STANDINGS_CACHE_FILE, "utf8"),
+        );
       }
     }
   }
@@ -652,13 +800,41 @@ async function getGroupStandingsMessage(range) {
 
   let targetGroups = [];
   if (range === "AD")
-    targetGroups = ["GROUP_A", "GROUP_B", "GROUP_C", "GROUP_D", "Group A", "Group B", "Group C", "Group D"];
+    targetGroups = [
+      "GROUP_A",
+      "GROUP_B",
+      "GROUP_C",
+      "GROUP_D",
+      "Group A",
+      "Group B",
+      "Group C",
+      "Group D",
+    ];
   if (range === "EH")
-    targetGroups = ["GROUP_E", "GROUP_F", "GROUP_G", "GROUP_H", "Group E", "Group F", "Group G", "Group H"];
+    targetGroups = [
+      "GROUP_E",
+      "GROUP_F",
+      "GROUP_G",
+      "GROUP_H",
+      "Group E",
+      "Group F",
+      "Group G",
+      "Group H",
+    ];
   if (range === "IL")
-    targetGroups = ["GROUP_I", "GROUP_J", "GROUP_K", "GROUP_L", "Group I", "Group J", "Group K", "Group L"];
+    targetGroups = [
+      "GROUP_I",
+      "GROUP_J",
+      "GROUP_K",
+      "GROUP_L",
+      "Group I",
+      "Group J",
+      "Group K",
+      "Group L",
+    ];
 
-  let rangeLabel = range === "AD" ? "A - D" : range === "EH" ? "E - H" : "I - L";
+  let rangeLabel =
+    range === "AD" ? "A - D" : range === "EH" ? "E - H" : "I - L";
   let message = `📊 **جدول ترتيب مجموعات كأس العالم 2026 (${rangeLabel})** 🏆\n\n`;
 
   standingsData.forEach((groupData) => {
@@ -672,7 +848,8 @@ async function getGroupStandingsMessage(range) {
 
       groupData.table.forEach((teamRow, index) => {
         const teamInfo = translateTeam(teamRow.team.name);
-        let posEmoji = index === 0 ? "🥇" : index === 1 ? "🥈" : `${index + 1}️⃣`;
+        let posEmoji =
+          index === 0 ? "🥇" : index === 1 ? "🥈" : `${index + 1}️⃣`;
 
         message += `${posEmoji} ${teamInfo.flag} *${teamInfo.name}*\n`;
         message += ` ├ 🔹 النقاط: [ ${teamRow.points} ]\n`;
@@ -689,7 +866,10 @@ async function getGroupStandingsMessage(range) {
 bot.hears("📊 جدول الترتيب", async (ctx) => {
   try {
     const message = await getGroupStandingsMessage("AD");
-    await ctx.reply(message, { parse_mode: "Markdown", ...groupsInlineKeyboard });
+    await ctx.reply(message, {
+      parse_mode: "Markdown",
+      ...groupsInlineKeyboard,
+    });
   } catch (error) {
     ctx.reply("❌ فشل جلب الترتيب.");
   }
@@ -700,9 +880,12 @@ bot.action(/show_groups_(.+)/, async (ctx) => {
   try {
     await ctx.answerCbQuery();
     const range = ctx.match[1];
-    
+
     const message = await getGroupStandingsMessage(range);
-    if (!message) return ctx.reply("❌ عذراً، لم نتمكن من الحصول على البيانات لهذا النطاق.");
+    if (!message)
+      return ctx.reply(
+        "❌ عذراً، لم نتمكن من الحصول على البيانات لهذا النطاق.",
+      );
 
     await ctx.editMessageText(message, {
       parse_mode: "Markdown",
@@ -741,9 +924,16 @@ bot.hears("🏅 هدافو البطولة", async (ctx) => {
           },
         );
         scorersData = response.data.scorers;
-        fs.writeFileSync(SCORERS_CACHE_FILE, JSON.stringify(scorersData), "utf8");
+        fs.writeFileSync(
+          SCORERS_CACHE_FILE,
+          JSON.stringify(scorersData),
+          "utf8",
+        );
       } catch (err) {
-        console.error("⚠️ فشل تحديث الهدافين، سيتم استخدام الكاش إن وُجد:", err.message);
+        console.error(
+          "⚠️ فشل تحديث الهدافين، سيتم استخدام الكاش إن وُجد:",
+          err.message,
+        );
         if (fs.existsSync(SCORERS_CACHE_FILE)) {
           scorersData = JSON.parse(fs.readFileSync(SCORERS_CACHE_FILE, "utf8"));
         }
@@ -757,7 +947,14 @@ bot.hears("🏅 هدافو البطولة", async (ctx) => {
     let message = `🏅 **قائمة هدافي كأس العالم (TOP 10):**\n\n`;
     scorersData.forEach((scorer, index) => {
       const teamInfo = translateTeam(scorer.team.name);
-      let medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}️⃣`;
+      let medal =
+        index === 0
+          ? "🥇"
+          : index === 1
+            ? "🥈"
+            : index === 2
+              ? "🥉"
+              : `${index + 1}️⃣`;
       message += `${medal} *${scorer.player.name}* (${teamInfo.flag} ${teamInfo.name})\n⚽ الأهداف: *${scorer.goals}*\n────────────────\n`;
     });
     ctx.reply(message, { parse_mode: "Markdown" });
@@ -853,7 +1050,9 @@ async function checkLiveMatches() {
       }
     }
 
-    console.log("🌐 [API Request] جاري فحص أحداث المباريات الحية والاهداف الآن...");
+    console.log(
+      "🌐 [API Request] جاري فحص أحداث المباريات الحية والاهداف الآن...",
+    );
 
     const response = await axios.get(
       "https://api.football-data.org/v4/matches",
@@ -889,20 +1088,23 @@ async function checkLiveMatches() {
 
       // ⚽ 2. كود فحص الأهداف والبث الحي الذكي
       const cacheGoalKey = `goal_${matchId}_${match.score.fullTime.home}_${match.score.fullTime.away}`;
-      
+
       if (match.status === "LIVE" || match.status === "IN_PLAY") {
         const homeGoals = match.score.fullTime.home;
         const awayGoals = match.score.fullTime.away;
 
         // إذا أحرز أي فريق هدفاً ولم يتم تخزين هذا المفتاح في السيرفر بعد
-        if ((homeGoals > 0 || awayGoals > 0) && !fs.existsSync(`cache_${cacheGoalKey}.tmp`)) {
+        if (
+          (homeGoals > 0 || awayGoals > 0) &&
+          !fs.existsSync(`cache_${cacheGoalKey}.tmp`)
+        ) {
           fs.writeFileSync(`cache_${cacheGoalKey}.tmp`, "sent", "utf8");
-          
-          const goalMessage = 
+
+          const goalMessage =
             `🔥 **جــــــــووووووووول! هدف جديد الآن!** ⚽\n\n` +
             `${homeInfo.flag} *${homeInfo.name}* [ ${homeGoals} ]  -  [ ${awayGoals} ]  *${awayInfo.name}* ${awayInfo.flag}\n\n` +
             `🏆 تابع التغطية الحية للمونديال لحظة بلحظة مع البوت!`;
-            
+
           await sendBroadcast(goalMessage);
         }
       }
