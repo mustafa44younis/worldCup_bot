@@ -1008,6 +1008,7 @@ bot.action(/show_groups_(.+)/, async (ctx) => {
 // ==========================================
 bot.hears("🏅 هدافو البطولة", async (ctx) => {
   try {
+    const statusMsg = await ctx.reply("⏳ جاري جلب قائمة هدافي البطولة...");
     let scorersData = null;
     let useCache = false;
 
@@ -1047,13 +1048,20 @@ bot.hears("🏅 هدافو البطولة", async (ctx) => {
       }
     }
 
+    // حذف رسالة الانتظار
+    await ctx.telegram.deleteMessage(ctx.chat.id, statusMsg.message_id).catch(() => {});
+
     if (!scorersData || scorersData.length === 0) {
       return ctx.reply("🏅 القائمة غير متاحة بعد أو البطولة لم تبدأ.");
     }
 
     let message = `🏅 **قائمة هدافي كأس العالم (TOP 10):**\n\n`;
     scorersData.forEach((scorer, index) => {
-      const teamInfo = translateTeam(scorer.team.name);
+      const teamName = scorer.team?.name || 'منتخب مجهول';
+      const playerName = scorer.player?.name || 'لاعب مجهول';
+      const goals = scorer.goals !== undefined ? scorer.goals : 0;
+
+      const teamInfo = translateTeam(teamName);
       let medal =
         index === 0
           ? "🥇"
@@ -1062,11 +1070,12 @@ bot.hears("🏅 هدافو البطولة", async (ctx) => {
             : index === 2
               ? "🥉"
               : `${index + 1}️⃣`;
-      message += `${medal} *${scorer.player.name}* (${teamInfo.flag} ${teamInfo.name})\n⚽ الأهداف: *${scorer.goals}*\n────────────────\n`;
+      message += `${medal} *${playerName}* (${teamInfo.flag} ${teamInfo.name})\n⚽ الأهداف: *${goals}*\n────────────────\n`;
     });
     ctx.reply(message, { parse_mode: "Markdown" });
   } catch (error) {
-    ctx.reply("❌ فشل جلب قائمة الهدافين.");
+    console.error("خطأ زر هدافي البطولة:", error.message);
+    await ctx.reply("❌ فشل جلب قائمة الهدافين.");
   }
 });
 
