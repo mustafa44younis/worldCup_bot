@@ -1011,8 +1011,7 @@ bot.hears("🏅 هدافو البطولة", async (ctx) => {
     const statusMsg = await ctx.reply("⏳ جاري جلب قائمة هدافي البطولة...");
     let scorersData = null;
     let useCache = false;
-    // مؤقتاً: تجاوز الكاش لجلب البيانات الجديدة مباشرة من السيرفر لمعاينة الخطأ
-    if (false && fs.existsSync(SCORERS_CACHE_FILE)) {
+    if (fs.existsSync(SCORERS_CACHE_FILE)) {
       const stats = fs.statSync(SCORERS_CACHE_FILE);
       const now = Date.now();
       if (now - stats.mtimeMs < CACHE_EXPIRIES.STABLE_DATA) {
@@ -1023,7 +1022,7 @@ bot.hears("🏅 هدافو البطولة", async (ctx) => {
 
     if (!useCache) {
       try {
-        console.log("🌐 [API Request] جاري تحديث الهدافين لمعاينة البيانات...");
+        console.log("🌐 [API Request] جاري تحديث الهدافين من السيرفر...");
         const response = await axios.get(
           "https://api.football-data.org/v4/competitions/WC/scorers",
           {
@@ -1040,7 +1039,6 @@ bot.hears("🏅 هدافو البطولة", async (ctx) => {
         );
       } catch (err) {
         console.error("⚠️ فشل تحديث الهدافين من السيرفر:", err.message);
-        await ctx.reply(`⚠️ فشل الاتصال بالسيرفر: ${err.message}`);
         if (fs.existsSync(SCORERS_CACHE_FILE)) {
           scorersData = JSON.parse(fs.readFileSync(SCORERS_CACHE_FILE, "utf8"));
         }

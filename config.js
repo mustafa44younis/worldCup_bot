@@ -1,8 +1,8 @@
 import 'dotenv/config';
 
 // 🔑 رموز الاتصال (Tokens & Keys)
-export const botToken = process.env.TELEGRAM_BOT_TOKEN;
-export const apiKey = process.env.FOOTBALL_DATA_API_KEY;
+export const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+export const apiKey = process.env.FOOTBALL_DATA_API_KEY?.trim();
 
 // 👑 معرّف المطور / الأدمن
 export const ADMIN_ID = 5403930262;
