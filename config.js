@@ -15,6 +15,7 @@ export const checkInterval = 60000;
 export const STANDINGS_CACHE_FILE   = './standings_cache.json';
 export const SCORERS_CACHE_FILE     = './scorers_cache.json';
 export const ROUND1_CACHE_FILE      = './round1_cache.json';
+export const KNOCKOUT_CACHE_FILE    = './cache_knockout_matches.json';
 
 export const MATCHES_TODAY_CACHE     = './cache_matches_today.json';
 export const MATCHES_TOMORROW_CACHE  = './cache_matches_tomorrow.json';

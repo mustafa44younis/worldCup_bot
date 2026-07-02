@@ -32,7 +32,7 @@ export function sendPermanentMenu(ctx, text) {
     reply_markup: {
       keyboard: [
         [{ text: "⏺️ مباريات اليوم" }, { text: "📊 جدول الترتيب" }],
-        [{ text: '🏆 الأدوار الإقصائية', callback_data: 'knockout_stage' }],
+        [{ text: "🏆 الأدوار الإقصائية" }],
         [{ text: "◀️ مباريات الأمس" }, { text: "▶️ مباريات الغد" }],
         [{ text: "📅 الجولة الأولى" }, { text: "📅 الجولة الثانية" }],
         [{ text: "📅 الجولة الثالثة" }, { text: "🏅 هدافو البطولة" }],

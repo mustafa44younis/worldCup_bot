@@ -29,6 +29,7 @@ import {
   STANDINGS_CACHE_FILE,
   SCORERS_CACHE_FILE,
   ROUND1_CACHE_FILE,
+  KNOCKOUT_CACHE_FILE,
   ADMIN_ID,
   MATCHES_LIVE_CACHE,
   CACHE_EXPIRIES,
@@ -359,80 +360,186 @@ bot.action(/round1_(.+)/, async (ctx) => {
   }
 });
 
-// ===== الادوار الاقصائية =========
+// ==========================================
+// 🏆 الأدوار الإقصائية (Knockout Stage)
+// ==========================================
+async function getKnockoutMatchesMessage() {
+  const CACHE_DURATION = CACHE_EXPIRIES.DAILY_MATCHES; // 10 minutes
+  const now = Date.now();
+  let matchesData = null;
 
-bot.action('knockout_stage', async (ctx) => {
   try {
-    // إظهار رسالة سريعة للمستخدم بأنه جاري التحميل
-    await ctx.answerCbQuery('جاري تحميل مواجهات الحسم... ⏳');
-
-    console.log("🌐 [API Request] جاري فحص مباريات الأدوار الإقصائية...");
-
-    const response = await axios.get(
-      "https://api.football-data.org/v4/matches",
-      {
-        headers: { "X-Auth-Token": apiKey },
-        params: { competitions: "WC" }, // جلب كل مباريات كأس العالم
-        timeout: 4000,
+    if (fs.existsSync(KNOCKOUT_CACHE_FILE)) {
+      const stats = fs.statSync(KNOCKOUT_CACHE_FILE);
+      if (now - stats.mtimeMs < CACHE_DURATION) {
+        matchesData = JSON.parse(fs.readFileSync(KNOCKOUT_CACHE_FILE, "utf8"));
+        console.log("ℹ️ [Cache Hit] تم جلب مباريات الأدوار الإقصائية من الكاش.");
       }
-    );
+    }
 
-    const matches = response.data.matches || [];
+    if (!matchesData) {
+      console.log("🌐 [API Request] جاري تحديث مباريات الأدوار الإقصائية من السيرفر...");
+      const response = await axios.get(
+        "https://api.football-data.org/v4/competitions/WC/matches",
+        { headers: { "X-Auth-Token": apiKey }, timeout: 4000 }
+      );
+      matchesData = response.data.matches || [];
+      fs.writeFileSync(KNOCKOUT_CACHE_FILE, JSON.stringify(matchesData), "utf8");
+    }
 
-    // قمنا بتحديد الكلمات المفتاحية للأدوار الإقصائية بناءً على توثيق الـ API
-    // تشمل: دور الـ 32، ثمن النهائي، ربع النهائي، نصف النهائي، والنهائي
+    if (!matchesData || matchesData.length === 0) return null;
+
     const knockoutStages = [
       'LAST_32', 'ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL', 'THIRD_PLACE'
     ];
 
-    // فلترة المباريات لتشمل فقط الأدوار الإقصائية
-    const knockoutMatches = matches.filter(match => knockoutStages.includes(match.stage));
+    const knockoutMatches = matchesData.filter(match => knockoutStages.includes(match.stage));
 
     if (knockoutMatches.length === 0) {
-      return await ctx.reply('📊 لم تتحدد مواجهات الأدوار الإقصائية بعد. تابعنا لمعرفتها فور صدورها! 🎯');
+      return '📊 لم تتحدد مواجهات الأدوار الإقصائية بعد. تابعنا لمعرفتها فور صدورها! 🎯';
     }
 
-    // ترتيب وتنسيق الرسالة للمستخدم
-    let message = `🏆 **مواجهات الأدوار الإقصائية الحامسية - كأس العالم 2026** ⚽\n\n`;
-
-    // قمنا بتقسيم المباريات حسب الدور لتظهر بشكل منسق جداً
     const stagesTranslation = {
       'LAST_32': '🔹 دور الـ 32',
-      'ROUND_OF_16': '🔥 دور ثمن النهائي (16)',
+      'ROUND_OF_16': '🔥 دور الـ 16 (ثمن النهائي)',
       'QUARTER_FINALS': '🚀 دور ربع النهائي (8)',
       'SEMI_FINALS': '⚡ دور نصف النهائي (4)',
       'FINAL': '👑 النهائي الكبير',
       'THIRD_PLACE': '🥉 مباراة تحديد المركز الثالث'
     };
 
-    // تجميع المباريات حسب كل دور
-    let currentStage = '';
-    
-    knockoutMatches.forEach(match => {
-      if (currentStage !== match.stage) {
-        currentStage = match.stage;
-        message += `\n━━━━━━━ ${stagesTranslation[currentStage] || currentStage} ━━━━━━━\n`;
-      }
-
-      const homeInfo = translateTeam(match.homeTeam.name || 'لم يحدد بعد');
-      const awayInfo = translateTeam(match.awayTeam.name || 'لم يحدد بعد');
-      
-      const homeScore = match.score.fullTime.home !== null ? match.score.fullTime.home : '-';
-      const awayScore = match.score.fullTime.away !== null ? match.score.fullTime.away : '-';
-
-      // عرض حالة المباراة إذا كانت منتهية أو ملعوبة أو قادمة
-      let statusIcon = '🗓️';
-      if (match.status === 'LIVE' || match.status === 'IN_PLAY') statusIcon = '🔴 مباشر';
-      if (match.status === 'FINISHED') statusIcon = '✅';
-
-      message += `${statusIcon} *${homeInfo.name}*  ${homeScore} 🆚 ${awayScore}  *${awayInfo.name}*\n`;
+    // تجميع وترتيب المباريات حسب الدور
+    const groupedMatches = {};
+    knockoutStages.forEach(stage => {
+      groupedMatches[stage] = [];
     });
 
-    await ctx.replyWithMarkdown(message);
+    knockoutMatches.forEach(match => {
+      if (groupedMatches[match.stage]) {
+        groupedMatches[match.stage].push(match);
+      }
+    });
 
-  } catch (err) {
-    console.error("❌ خطأ في جلب الأدوار الإقصائية:", err.message);
-    await ctx.reply("⚠️ عذراً، حدث خطأ أثناء جلب البيانات الإقصائية. يرجى المحاولة لاحقاً.");
+    let message = `🏆 **مواجهات الأدوار الإقصائية الحاسمة - كأس العالم 2026** ⚽\n📍 _بتوقيت مكة المكرمة_\n\n`;
+    let hasMatches = false;
+
+    knockoutStages.forEach(stage => {
+      const stageMatches = groupedMatches[stage];
+      if (stageMatches && stageMatches.length > 0) {
+        hasMatches = true;
+        message += `━━━━━━━ *${stagesTranslation[stage]}* ━━━━━━━\n\n`;
+
+        stageMatches.forEach(match => {
+          const homeInfo = translateTeam(match.homeTeam?.name || 'لم يحدد بعد');
+          const awayInfo = translateTeam(match.awayTeam?.name || 'لم يحدد بعد');
+
+          const makkahDateTime = moment.utc(match.utcDate).tz("Asia/Riyadh");
+          const matchDate = makkahDateTime.format("YYYY-MM-DD");
+          const matchTime = makkahDateTime.format("hh:mm A");
+
+          const homeScore = match.score?.fullTime?.home !== null ? match.score.fullTime.home : '-';
+          const awayScore = match.score?.fullTime?.away !== null ? match.score.fullTime.away : '-';
+
+          let statusText = '';
+          if (match.status === 'FINISHED') {
+            statusText = `✅ (انتهت)`;
+          } else if (match.status === 'LIVE' || match.status === 'IN_PLAY') {
+            statusText = `🔴 مباشر الآن`;
+          } else {
+            statusText = `🗓️ ${matchDate} | 🆚 ${matchTime}`;
+          }
+
+          message += `${homeInfo.flag} *${homeInfo.name}* \`[ ${homeScore} - ${awayScore} ]\` *${awayInfo.name}* ${awayInfo.flag}\n`;
+          message += `⏱️ _الحالة: ${statusText}_\n`;
+          message += `────────────────\n\n`;
+        });
+      }
+    });
+
+    if (!hasMatches) {
+      return '📊 لم تتحدد مواجهات الأدوار الإقصائية بعد. تابعنا لمعرفتها فور صدورها! 🎯';
+    }
+
+    return message;
+  } catch (error) {
+    console.error("❌ خطأ في جلب الأدوار الإقصائية:", error.message);
+    if (fs.existsSync(KNOCKOUT_CACHE_FILE)) {
+      try {
+        const fallbackData = JSON.parse(fs.readFileSync(KNOCKOUT_CACHE_FILE, "utf8"));
+        const knockoutStages = [
+          'LAST_32', 'ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL', 'THIRD_PLACE'
+        ];
+        const knockoutMatches = fallbackData.filter(match => knockoutStages.includes(match.stage));
+        if (knockoutMatches.length > 0) {
+          const stagesTranslation = {
+            'LAST_32': '🔹 دور الـ 32',
+            'ROUND_OF_16': '🔥 دور الـ 16 (ثمن النهائي)',
+            'QUARTER_FINALS': '🚀 دور ربع النهائي (8)',
+            'SEMI_FINALS': '⚡ دور نصف النهائي (4)',
+            'FINAL': '👑 النهائي الكبير',
+            'THIRD_PLACE': '🥉 مباراة تحديد المركز الثالث'
+          };
+          const groupedMatches = {};
+          knockoutStages.forEach(stage => { groupedMatches[stage] = []; });
+          knockoutMatches.forEach(match => { if (groupedMatches[match.stage]) groupedMatches[match.stage].push(match); });
+
+          let message = `⚠️ (بيانات مؤقتة) فشل الاتصال بالسيرفر، جاري عرض آخر تحديث مخزن...\n\n`;
+          message += `🏆 **مواجهات الأدوار الإقصائية الحاسمة - كأس العالم 2026** ⚽\n📍 _بتوقيت مكة المكرمة_\n\n`;
+          
+          let hasMatches = false;
+          knockoutStages.forEach(stage => {
+            const stageMatches = groupedMatches[stage];
+            if (stageMatches && stageMatches.length > 0) {
+              hasMatches = true;
+              message += `━━━━━━━ *${stagesTranslation[stage]}* ━━━━━━━\n\n`;
+              stageMatches.forEach(match => {
+                const homeInfo = translateTeam(match.homeTeam?.name || 'لم يحدد بعد');
+                const awayInfo = translateTeam(match.awayTeam?.name || 'لم يحدد بعد');
+                const makkahDateTime = moment.utc(match.utcDate).tz("Asia/Riyadh");
+                const matchDate = makkahDateTime.format("YYYY-MM-DD");
+                const matchTime = makkahDateTime.format("hh:mm A");
+                const homeScore = match.score?.fullTime?.home !== null ? match.score.fullTime.home : '-';
+                const awayScore = match.score?.fullTime?.away !== null ? match.score.fullTime.away : '-';
+                let statusText = match.status === 'FINISHED' ? `✅ (انتهت)` : (match.status === 'LIVE' || match.status === 'IN_PLAY' ? `🔴 مباشر` : `🗓️ ${matchDate} | 🆚 ${matchTime}`);
+                message += `${homeInfo.flag} *${homeInfo.name}* \`[ ${homeScore} - ${awayScore} ]\` *${awayInfo.name}* ${awayInfo.flag}\n`;
+                message += `⏱️ _الحالة: ${statusText}_\n`;
+                message += `────────────────\n\n`;
+              });
+            }
+          });
+          if (hasMatches) return message;
+        }
+      } catch (e) {
+        console.error(e.message);
+      }
+    }
+    return "❌ عذراً، فشل جلب الأدوار الإقصائية حالياً.";
+  }
+}
+
+// الاستماع لزر الأدوار الإقصائية من القائمة الرئيسية
+bot.hears("🏆 الأدوار الإقصائية", async (ctx) => {
+  try {
+    const statusMsg = await ctx.reply("⏳ جاري جلب مواجهات الأدوار الإقصائية...");
+    const message = await getKnockoutMatchesMessage();
+    
+    // حذف رسالة "جاري الجلب" وإرسال الرسالة النهائية
+    await ctx.telegram.deleteMessage(ctx.chat.id, statusMsg.message_id).catch(() => {});
+    await ctx.reply(message, { parse_mode: "Markdown" });
+  } catch (error) {
+    console.error("خطأ زر الأدوار الإقصائية:", error.message);
+    await ctx.reply("❌ عذراً، فشل جلب مواجهات الأدوار الإقصائية.");
+  }
+});
+
+// معالج الأكشن للأدوار الإقصائية (عند الاستدعاء المباشر)
+bot.action('knockout_stage', async (ctx) => {
+  try {
+    await ctx.answerCbQuery('جاري تحميل مواجهات الحسم... ⏳');
+    const message = await getKnockoutMatchesMessage();
+    await ctx.reply(message, { parse_mode: "Markdown" });
+  } catch (error) {
+    console.error("خطأ أكشن الأدوار الإقصائية:", error.message);
   }
 });
 
